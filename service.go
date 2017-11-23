@@ -18,13 +18,13 @@ curl -H "Content-Type: application/json" -d '{"Hostname":"h2", "IP":"1.2.3.4", "
 func serviceRegister(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	var service sdlib.Manifest
+	var manifest sdlib.Manifest
 
-	var svc string
+	var service string
 	var inst string
 	var err error
 
-	svc = vars["service"]
+	service = vars["service"]
 	inst = vars["instance"]
 
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
@@ -34,7 +34,7 @@ func serviceRegister(w http.ResponseWriter, r *http.Request) {
 	if err := r.Body.Close(); err != nil {
 		panic(err)
 	}
-	if err := json.Unmarshal(body, &service); err != nil {
+	if err := json.Unmarshal(body, &manifest); err != nil {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(422) // unprocessable entity
 		if err := json.NewEncoder(w).Encode(err); err != nil {
@@ -42,7 +42,7 @@ func serviceRegister(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	t := serviceToEndpoints(service, svc, inst)
+	t := serviceToEndpoints(manifest, service, inst)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(t); err != nil {
@@ -50,10 +50,10 @@ func serviceRegister(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func serviceToEndpoints(service sdlib.Manifest, svc string, instance string) []sdlib.Endpoint {
+func serviceToEndpoints(manifest sdlib.Manifest, service string, instance string) []sdlib.Endpoint {
 
-	for _, p := range service.Paths {
-		CreateEndpoint(instance, service.Hostname, service.IP, svc, p.Method, p.Path)
+	for _, p := range manifest.Paths {
+		CreateEndpoint(instance, manifest.Hostname, manifest.IP, service, p.Method, p.Path)
 	}
 
 	return endpoints
